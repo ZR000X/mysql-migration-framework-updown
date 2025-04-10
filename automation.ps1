@@ -12,6 +12,23 @@ if (Test-Path .env) {
     Write-Output "No .env file found."
 }
 
+# Function to read the last applied version
+function Get-LastAppliedVersion {
+    if (Test-Path "migration_config.txt") {
+        return [int](Get-Content "migration_config.txt")
+    } else {
+        return 0
+    }
+}
+
+# Function to update the last applied version
+function Set-LastAppliedVersion {
+    param (
+        [int]$version
+    )
+    Set-Content -Path "migration_config.txt" -Value $version
+}
+
 # Function to apply SQL files
 function Apply-SqlFiles {
     param (
@@ -20,15 +37,39 @@ function Apply-SqlFiles {
         [int]$end
     )
 
-    $files = Get-ChildItem -Path "migrations" -Filter "*.sql" | Sort-Object Name
+    $lastApplied = Get-LastAppliedVersion
+
+    if ($direction -eq 'up' -and $start -ne $lastApplied -and $start -ne ($lastApplied + 1)) {
+        Write-Output "Error: Current version is $lastApplied. You must apply migrations sequentially."
+        return
+    }
+
+    if ($direction -eq 'down' -and $start -ne $lastApplied) {
+        Write-Output "Error: Current version is $lastApplied. You must apply migrations sequentially."
+        return
+    }
+
+    # Sort files in reverse order for down migrations
+    if ($direction -eq 'down') {
+        $files = Get-ChildItem -Path "migrations" -Filter "*.sql" | Sort-Object Name -Descending
+    } else {
+        $files = Get-ChildItem -Path "migrations" -Filter "*.sql" | Sort-Object Name
+    }
 
     foreach ($file in $files) {
         $seq = [int]($file.Name -replace '\D', '')
         $fileDirection = if ($file.Name -match '_up_') { 'up' } elseif ($file.Name -match '_down_') { 'down' } else { '' }
 
-        if ($seq -ge $start -and $seq -le $end -and $fileDirection -eq $direction) {
+        if ($direction -eq 'up' -and $seq -ge $start -and $seq -le $end -and $fileDirection -eq $direction) {
             Write-Output "Applying $file"
             Get-Content "$($file.FullName)" | mysql --protocol=TCP -h 127.0.0.1 -P 3306 -u root -pShaun722001 2>$null
+            Set-LastAppliedVersion -version $seq
+        }
+
+        if ($direction -eq 'down' -and $seq -le $start -and $seq -gt $end -and $fileDirection -eq $direction) {
+            Write-Output "Applying $file"
+            Get-Content "$($file.FullName)" | mysql --protocol=TCP -h 127.0.0.1 -P 3306 -u root -pShaun722001 2>$null
+            Set-LastAppliedVersion -version ($seq - 1)
         }
     }
 }
