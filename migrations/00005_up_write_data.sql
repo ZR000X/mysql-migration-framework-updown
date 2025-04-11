@@ -1,0 +1,1 @@
+INSERT INTO `BMS-DDE-DEV`.`test_table` (`name`, `description`) VALUES ('test', 'test');

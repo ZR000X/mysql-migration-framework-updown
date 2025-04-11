@@ -1,0 +1,1 @@
+ALTER TABLE `BMS-DDE-DEV`.`test_table` DROP COLUMN `description`;

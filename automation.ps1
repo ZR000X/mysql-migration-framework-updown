@@ -62,14 +62,24 @@ function Apply-SqlFiles {
 
         if ($direction -eq 'up' -and $seq -ge $start -and $seq -le $end -and $fileDirection -eq $direction) {
             Write-Output "Applying $file"
-            Get-Content "$($file.FullName)" | mysql --protocol=TCP -h 127.0.0.1 -P 3306 -u root -pShaun722001 2>$null
-            Set-LastAppliedVersion -version $seq
+            Get-Content "$($file.FullName)" | mysql --protocol=TCP -h 127.0.0.1 -P 3306 -u root -pShaun722001 1>$null
+            if ($LASTEXITCODE -eq 0) {
+                Set-LastAppliedVersion -version $seq
+            } else {
+                Write-Output "Error applying $file. Migration halted."
+                return
+            }
         }
 
         if ($direction -eq 'down' -and $seq -le $start -and $seq -gt $end -and $fileDirection -eq $direction) {
             Write-Output "Applying $file"
-            Get-Content "$($file.FullName)" | mysql --protocol=TCP -h 127.0.0.1 -P 3306 -u root -pShaun722001 2>$null
-            Set-LastAppliedVersion -version ($seq - 1)
+            Get-Content "$($file.FullName)" | mysql --protocol=TCP -h 127.0.0.1 -P 3306 -u root -pShaun722001 1>$null
+            if ($LASTEXITCODE -eq 0) {
+                Set-LastAppliedVersion -version ($seq - 1)
+            } else {
+                Write-Output "Error applying $file. Migration halted."
+                return
+            }
         }
     }
 }

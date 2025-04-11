@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS `test_table`;
+DROP TABLE IF EXISTS `BMS-DDE-DEV`.`test_table`;

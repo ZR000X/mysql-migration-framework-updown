@@ -666,11 +666,6 @@ CREATE TABLE IF NOT EXISTS `dbut_seed_tables` (
   PRIMARY KEY (`from_table`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- Dumping data for table BMS-DDE-DEV.dbut_seed_tables: ~2 rows (approximately)
-INSERT INTO `dbut_seed_tables` (`from_table`, `to_table`, `insert_order`) VALUES
-	('_seed_trans_accounts', 'trans_accounts', 1),
-	('_seed_trans_entries', 'trans_entries', 2);
-
 -- Dumping structure for table BMS-DDE-DEV.dbut_tests
 CREATE TABLE IF NOT EXISTS `dbut_tests` (
   `test_id` int NOT NULL AUTO_INCREMENT,
