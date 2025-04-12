@@ -8,6 +8,11 @@ if (Test-Path .env) {
         }
     }
     Write-Output "Loaded environment variables from .env file."
+    Write-Output "Using database configuration:"
+    Write-Output "  DB_HOST: $env:DB_HOST"
+    Write-Output "  DB_PORT: $env:DB_PORT"
+    Write-Output "  DB_USER: $env:DB_USER"
+    Write-Output "  DB_PASSWORD: *****"
 } else {
     Write-Output "No .env file found."
 }
@@ -62,22 +67,38 @@ function Apply-SqlFiles {
 
         if ($direction -eq 'up' -and $seq -ge $start -and $seq -le $end -and $fileDirection -eq $direction) {
             Write-Output "Applying $file"
-            Get-Content "$($file.FullName)" | mysql --protocol=TCP -h 127.0.0.1 -P 3306 -u root -pShaun722001 1>$null
+            $sqlContent = Get-Content "$($file.FullName)" -Raw
+            $mysqlArgs = @(
+                "--protocol=TCP",
+                "-h", $env:DB_HOST,
+                "-P", $env:DB_PORT,
+                "-u", $env:DB_USER,
+                "-p$env:DB_PASSWORD"
+            )
+            $sqlContent | & mysql $mysqlArgs
             if ($LASTEXITCODE -eq 0) {
                 Set-LastAppliedVersion -version $seq
             } else {
-                Write-Output "Error applying $file. Migration halted."
+                Write-Output "Error applying $file. Migration halted. Exit code: $LASTEXITCODE"
                 return
             }
         }
 
         if ($direction -eq 'down' -and $seq -le $start -and $seq -gt $end -and $fileDirection -eq $direction) {
             Write-Output "Applying $file"
-            Get-Content "$($file.FullName)" | mysql --protocol=TCP -h 127.0.0.1 -P 3306 -u root -pShaun722001 1>$null
+            $sqlContent = Get-Content "$($file.FullName)" -Raw
+            $mysqlArgs = @(
+                "--protocol=TCP",
+                "-h", $env:DB_HOST,
+                "-P", $env:DB_PORT,
+                "-u", $env:DB_USER,
+                "-p$env:DB_PASSWORD"
+            )
+            $sqlContent | & mysql $mysqlArgs
             if ($LASTEXITCODE -eq 0) {
                 Set-LastAppliedVersion -version ($seq - 1)
             } else {
-                Write-Output "Error applying $file. Migration halted."
+                Write-Output "Error applying $file. Migration halted. Exit code: $LASTEXITCODE"
                 return
             }
         }
